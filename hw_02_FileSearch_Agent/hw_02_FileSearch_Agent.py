@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
+
 BASE_DIR = Path(__file__).resolve().parent
 
 # tool 1: lists all the files in the project
@@ -81,12 +82,20 @@ SYSTEM_PROMPT = (
 )
 
 
-def run_agent(client: OpenAI, user_input: str) -> str:
+def run_agent(client: OpenAI, user_input: str, messages = list[dict]) -> str:
     """Runs the agent until it stops calling tools, returns its final text"""
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_input},
-    ]
+
+    ###################### for a response with memory ##############:
+    if messages is None:
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    messages.append({"role": "user", "content": user_input})
+
+    ################# for a response without memory #################3:
+    #messages = [
+     #   {"role": "system", "content": SYSTEM_PROMPT},
+  #      {"role": "user", "content": user_input},
+  #  ]
 
     while True:
         response = complete(client, messages, tools)
@@ -123,9 +132,19 @@ def main():
         base_url="https://openrouter.ai/api/v1",
         api_key=os.getenv("OPEN_ROUTER_API_KEY"),
     )
-    answer = run_agent(client, "Find the files that contain the keyword pytest")
-    print("Agent said:", answer)
+   # answer = run_agent(client, "Find the files that contain the keyword pytest")
+   # print("Agent said:", answer)
 
+    # for a chat with history of the messages:
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    while True:
+        inp = input("You: ")
+        if inp == "quit":
+            break
+        answer = run_agent(client, inp, messages)
+        print("Agent said:", answer)
+        print(f"Message count: {len(messages)}")
 
 if __name__ == "__main__":
     main()
